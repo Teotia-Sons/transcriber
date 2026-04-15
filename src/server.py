@@ -33,6 +33,11 @@ class Server:
         if self._listening_event.is_set():
             self._cancel_recording()
 
+    def _type_text(self, text: str):
+        for char in text:
+            self.keyboard.type(char)
+            time.sleep(0.005)
+
     def _start_recording(self):
         self.audio_queue = self.recorder.start()
         self.transcriber.start()
@@ -42,7 +47,7 @@ class Server:
         audio_bytes = self.recorder.stop()
         self._stop_sender_thread()
         final_text = self.transcriber.stop()
-        self.keyboard.type(final_text)
+        self._type_text(final_text)
         self.last_transcription = final_text
         upload_audio(audio_bytes, final_text)
 
@@ -90,11 +95,11 @@ class Server:
         elif key == keyboard.Key.esc and self._listening_event.is_set():
             self._cancel_recording()
         elif (
-            key == keyboard.KeyCode.from_char("v")
-            and keyboard.Key.ctrl_l in self._pressed_keys
-            and keyboard.Key.cmd in self._pressed_keys
+                key == keyboard.KeyCode.from_char("v")
+                and keyboard.Key.ctrl_l in self._pressed_keys
+                and keyboard.Key.cmd in self._pressed_keys
         ):
-            self.keyboard.type(self.last_transcription)
+            self._type_text(self.last_transcription)
 
     def _on_key_release(self, key):
         self._pressed_keys.discard(key)
