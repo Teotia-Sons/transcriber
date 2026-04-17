@@ -1,7 +1,7 @@
 import sys
 import threading
 from queue import Queue
-from typing import Optional
+from typing import Optional, Union
 
 from loguru import logger
 from pyaudio import PyAudio, paInt16
@@ -10,16 +10,18 @@ FRAMES_PER_SECOND = 16000
 AUDIO_FORMAT = paInt16
 BYTES_PER_FRAME = 2
 
+SENTINEL = object()
+
 
 class Recorder:
     def __init__(self):
         self._record_thread: threading.Thread | None = None
         self._listening_event = threading.Event()
         self._stream = None
-        self._audio_queue: Optional[Queue[bytes]] | None = None
+        self._audio_queue: Optional[Queue[Union[bytes, object]]] = None
         self._frames: list[bytes] = []
 
-    def start(self) -> Queue[bytes]:
+    def start(self) -> Queue[Union[bytes, object]]:
         assert not self._listening_event.is_set()
 
         self._stream = PyAudio().open(
@@ -69,6 +71,7 @@ class Recorder:
 
         self._stream.stop_stream()
         self._stream.close()
+        self._audio_queue.put(SENTINEL)
         logger.debug("Recording stopped")
 
 

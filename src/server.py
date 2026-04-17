@@ -1,11 +1,11 @@
 import threading
 import time
-from queue import Empty
 
+from loguru import logger
 from pynput import keyboard
 from pynput.keyboard import Controller
 
-from .recorder import Recorder
+from .recorder import Recorder, SENTINEL
 from .storage import upload_audio
 from .transcriber import Transcriber
 
@@ -36,7 +36,7 @@ class Server:
     def _type_text(self, text: str):
         for char in text:
             self.keyboard.type(char)
-            time.sleep(0.005)
+            time.sleep(0.001)
 
     def _start_recording(self):
         self.audio_queue = self.recorder.start()
@@ -62,16 +62,19 @@ class Server:
         self._sender_thread.start()
 
     def _send_audio_to_transcriber(self):
-        while self._listening_event.is_set():
-            try:
-                chunk = self.audio_queue.get(timeout=0.2)
-                self.transcriber.send_chunk(chunk)
-            except Empty:
-                pass
+        logger.debug(f"Started the bridge")
+        while True:
+            chunk = self.audio_queue.get()
+            if chunk is SENTINEL:
+                break
+            self.transcriber.send_chunk(chunk)
+        logger.debug(f"Exited the bridge")
 
     def _stop_sender_thread(self):
-        self._listening_event.clear()
+        logger.debug(f"Stopping the bridge")
         self._sender_thread.join()
+        self._listening_event.clear()
+        logger.debug(f"Stopped the bridge")
 
     def _on_key_press(self, key):
         self._pressed_keys.add(key)
@@ -95,9 +98,9 @@ class Server:
         elif key == keyboard.Key.esc and self._listening_event.is_set():
             self._cancel_recording()
         elif (
-                key == keyboard.KeyCode.from_char("v")
-                and keyboard.Key.ctrl_l in self._pressed_keys
-                and keyboard.Key.cmd in self._pressed_keys
+            key == keyboard.KeyCode.from_char("v")
+            and keyboard.Key.ctrl_l in self._pressed_keys
+            and keyboard.Key.cmd in self._pressed_keys
         ):
             self._type_text(self.last_transcription)
 
