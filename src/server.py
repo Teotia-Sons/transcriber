@@ -36,7 +36,7 @@ class Server:
     def _type_text(self, text: str):
         for char in text:
             self.keyboard.type(char)
-            time.sleep(0.001)
+            time.sleep(0.002)
 
     def _start_recording(self):
         self.audio_queue = self.recorder.start()
@@ -98,9 +98,9 @@ class Server:
         elif key == keyboard.Key.esc and self._listening_event.is_set():
             self._cancel_recording()
         elif (
-            key == keyboard.KeyCode.from_char("v")
-            and keyboard.Key.ctrl_l in self._pressed_keys
-            and keyboard.Key.cmd in self._pressed_keys
+                key == keyboard.KeyCode.from_char("v")
+                and keyboard.Key.ctrl_l in self._pressed_keys
+                and keyboard.Key.cmd in self._pressed_keys
         ):
             self._type_text(self.last_transcription)
 
