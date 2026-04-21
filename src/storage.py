@@ -13,8 +13,8 @@ bucket = client.bucket(Config.GCP_VOICE_PROMPTS_BUCKET)
 
 
 def upload_audio(pcm_bytes: bytes, text: str, content_type: str = "audio/wav"):
-    timestamp = datetime.now(UTC)
-    blob = bucket.blob(f"{timestamp.strftime('%Y%m%d_%H%M%S_%f')}.wav")
+    timestamp = datetime.now(UTC).replace(microsecond=0)
+    blob = bucket.blob(f"{timestamp.strftime('%Y%m%d_%H%M%S')}.wav")
     wav_buffer = io.BytesIO()
     with wave.open(wav_buffer, "wb") as wav_file:
         wav_file.setnchannels(1)
