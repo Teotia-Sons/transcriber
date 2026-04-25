@@ -13,7 +13,7 @@ from config import Config
 
 class Transcriber:
     def __init__(
-        self,
+            self,
     ):
         self._ws: Optional[websocket.WebSocketApp] = None
         self._state: dict[str, str] = {}
@@ -32,7 +32,7 @@ class Transcriber:
         checkpoint = json.dumps({"checkpoint_id": "final"})
         assert self._ws
         self._ws.send(checkpoint)
-        self._is_complete_event.wait(timeout=5)
+        self._is_complete_event.wait()
 
         self._disconnect()
         logger.debug("Transcription stopped")
@@ -54,7 +54,7 @@ class Transcriber:
         thread = threading.Thread(target=ws.run_forever)
         thread.start()
         self._ws = ws
-        self._is_connected_event.wait(timeout=5)
+        self._is_connected_event.wait()
         logger.debug("Transcription started")
 
     def _on_message(self, ws, message):
