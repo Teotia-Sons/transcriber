@@ -35,7 +35,7 @@ class Recorder:
 
     def _record(self):
         while self._listening_event.is_set():
-            data = self._stream.read(FRAMES_PER_SECOND)
+            data = self._stream.read(FRAMES_PER_SECOND // 10)
             self._frames.append(data)
 
     def stop(self) -> bytes:

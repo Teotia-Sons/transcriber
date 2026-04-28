@@ -3,11 +3,12 @@ import threading
 import time
 import wave
 
+from opentelemetry import context, trace
 from pynput import keyboard
 from pynput.keyboard import Controller
 
 from .recorder import FRAMES_PER_SECOND, Recorder
-from .storage import upload_audio
+from .storage import save_recording
 from .transcribe import transcribe
 
 
@@ -34,6 +35,7 @@ class Server:
         self._double_press_window = 0.5
         self.last_transcription: str = ""
         self._pressed_keys: set = set()
+        self._recording_token = None
 
     def start(self):
         self._key_monitor.start()
@@ -51,6 +53,8 @@ class Server:
     def _start_recording(self):
         self.last_transcription = ""
         self._listening_event.set()
+        span = trace.get_tracer(__name__).start_span("recording")
+        self._recording_token = context.attach(trace.set_span_in_context(span))
         self.recorder.start()
 
     def _stop_recording(self):
@@ -60,11 +64,18 @@ class Server:
         final_text = transcribe(wav_bytes)
         self._type_text(final_text)
         self.last_transcription = final_text
-        upload_audio(wav_bytes, final_text)
+        transcription_id = save_recording(wav_bytes, final_text)
+        span = trace.get_current_span()
+        span.set_attribute("transcription.id", transcription_id)
+        context.detach(self._recording_token)
+        span.end()
+        self._recording_token = None
 
     def _cancel_recording(self):
         self.recorder.cancel()
         self._listening_event.clear()
+        context.detach(self._recording_token)
+        self._recording_token = None
 
     def _on_key_press(self, key):
         self._pressed_keys.add(key)
