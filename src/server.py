@@ -52,23 +52,29 @@ class Server:
 
     def _start_recording(self):
         self.last_transcription = ""
-        self._listening_event.set()
+
         span = trace.get_tracer(__name__).start_span("recording")
         self._recording_token = context.attach(trace.set_span_in_context(span))
+
+        self._listening_event.set()
         self.recorder.start()
 
     def _stop_recording(self):
         pcm_bytes = self.recorder.stop()
         self._listening_event.clear()
+
         wav_bytes = _pcm_to_wav(pcm_bytes)
         final_text = transcribe(wav_bytes)
         self._type_text(final_text)
         self.last_transcription = final_text
+
         transcription_id = save_recording(wav_bytes, final_text)
+
         span = trace.get_current_span()
         span.set_attribute("transcription.id", transcription_id)
         context.detach(self._recording_token)
         span.end()
+
         self._recording_token = None
 
     def _cancel_recording(self):
