@@ -14,7 +14,7 @@ from .transcribe import transcribe
 
 def _pcm_to_wav(pcm_bytes: bytes) -> bytes:
     wav_buffer = io.BytesIO()
-    with wave.open(wav_buffer, 'wb') as wav_file:
+    with wave.open(wav_buffer, "wb") as wav_file:
         wav_file.setnchannels(1)
         wav_file.setsampwidth(2)
         wav_file.setframerate(FRAMES_PER_SECOND)
@@ -105,9 +105,9 @@ class Server:
         elif key == keyboard.Key.esc and self._listening_event.is_set():
             self._cancel_recording()
         elif (
-                key == keyboard.KeyCode.from_char("v")
-                and keyboard.Key.ctrl_l in self._pressed_keys
-                and keyboard.Key.cmd in self._pressed_keys
+            key == keyboard.KeyCode.from_char("v")
+            and keyboard.Key.ctrl_l in self._pressed_keys
+            and keyboard.Key.cmd in self._pressed_keys
         ):
             self._type_text(self.last_transcription)
 

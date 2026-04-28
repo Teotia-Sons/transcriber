@@ -4,7 +4,6 @@ version = "0.1.0"
 requires-python = ">=3.13"
 dependencies = [
     "google-cloud-storage>=3.10.1",
-    "groq>=0.22.0",
     "loguru>=0.7.3",
     "mongoengine>=0.29.3",
     "opentelemetry-exporter-otlp>=1.41.1",
