@@ -1,8 +1,9 @@
 from mongoengine import connect
 
 from config import Config
-from .tracing import setup_tracing
+
 from .server import Server
+from .tracing import setup_tracing
 
 
 def main():

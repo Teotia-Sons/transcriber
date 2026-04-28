@@ -1,19 +1,17 @@
-import requests
+from groq import Groq
+from opentelemetry import trace
 
 from config import Config
 
+client = Groq(api_key=Config.GROQ_API_KEY)
+tracer = trace.get_tracer(__name__)
 
+
+@tracer.start_as_current_span("transcribe")
 def transcribe(wav_bytes: bytes) -> str:
-    response = requests.post(
-        "https://api.deepinfra.com/v1/inference/openai/whisper-large-v3-turbo",
-        headers={
-            "Authorization": f"bearer {Config.DEEPINFRA_API_KEY}",
-        },
-        files={
-            "audio": ("audio.wav", wav_bytes, "audio/wav"),
-        },
+    response = client.audio.transcriptions.create(
+        model="whisper-large-v3-turbo",
+        file=("audio.wav", wav_bytes),
+        response_format="text",
     )
-
-    response.raise_for_status()
-    result = response.json()
-    return result["text"]
+    return response
