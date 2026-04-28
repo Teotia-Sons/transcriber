@@ -843,6 +843,8 @@ dependencies = [
     { name = "pynput" },
     { name = "pyperclip" },
     { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "ruff" },
     { name = "websocket-client" },
 ]
 
@@ -861,6 +863,8 @@ requires-dist = [
     { name = "pynput", specifier = ">=1.8.1" },
     { name = "pyperclip", specifier = ">=1.11.0" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "requests", specifier = ">=2.33.1" },
+    { name = "ruff", specifier = ">=0.15.9" },
     { name = "websocket-client", specifier = ">=1.9.0" },
 ]
 

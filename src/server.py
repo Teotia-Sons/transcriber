@@ -1,13 +1,24 @@
+import io
 import threading
 import time
+import wave
 
-from loguru import logger
 from pynput import keyboard
 from pynput.keyboard import Controller
 
-from .recorder import Recorder, SENTINEL
+from .recorder import FRAMES_PER_SECOND, Recorder
 from .storage import upload_audio
-from .transcriber import Transcriber
+from .transcribe import transcribe
+
+
+def _pcm_to_wav(pcm_bytes: bytes) -> bytes:
+    wav_buffer = io.BytesIO()
+    with wave.open(wav_buffer, 'wb') as wav_file:
+        wav_file.setnchannels(1)
+        wav_file.setsampwidth(2)
+        wav_file.setframerate(FRAMES_PER_SECOND)
+        wav_file.writeframes(pcm_bytes)
+    return wav_buffer.getvalue()
 
 
 class Server:
@@ -16,7 +27,6 @@ class Server:
         self._key_monitor = keyboard.Listener(
             on_press=self._on_key_press, on_release=self._on_key_release
         )
-        self.transcriber = Transcriber()
         self.recorder = Recorder()
 
         self._listening_event = threading.Event()
@@ -39,42 +49,22 @@ class Server:
             time.sleep(0.002)
 
     def _start_recording(self):
-        self.audio_queue = self.recorder.start()
-        self.transcriber.start()
-        self._start_sender_thread()
+        self.last_transcription = ""
+        self._listening_event.set()
+        self.recorder.start()
 
     def _stop_recording(self):
-        audio_bytes = self.recorder.stop()
-        self._stop_sender_thread()
-        final_text = self.transcriber.stop()
+        pcm_bytes = self.recorder.stop()
+        self._listening_event.clear()
+        wav_bytes = _pcm_to_wav(pcm_bytes)
+        final_text = transcribe(wav_bytes)
         self._type_text(final_text)
         self.last_transcription = final_text
-        upload_audio(audio_bytes, final_text)
+        upload_audio(wav_bytes, final_text)
 
     def _cancel_recording(self):
         self.recorder.cancel()
-        self._stop_sender_thread()
-        self.transcriber.cancel()
-
-    def _start_sender_thread(self):
-        self._listening_event.set()
-        self._sender_thread = threading.Thread(target=self._send_audio_to_transcriber)
-        self._sender_thread.start()
-
-    def _send_audio_to_transcriber(self):
-        logger.debug(f"Started the bridge")
-        while True:
-            chunk = self.audio_queue.get()
-            if chunk is SENTINEL:
-                break
-            self.transcriber.send_chunk(chunk)
-        logger.debug(f"Exited the bridge")
-
-    def _stop_sender_thread(self):
-        logger.debug(f"Stopping the bridge")
-        self._sender_thread.join()
         self._listening_event.clear()
-        logger.debug(f"Stopped the bridge")
 
     def _on_key_press(self, key):
         self._pressed_keys.add(key)
