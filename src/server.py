@@ -7,8 +7,10 @@ from opentelemetry import context, trace
 from pynput import keyboard
 from pynput.keyboard import Controller
 
-from .recorder import FRAMES_PER_SECOND, Recorder
-from .storage import save_recording
+from .db import Transcription
+from .punctuation import fix_punctuation
+from .recorder import BYTES_PER_FRAME, FRAMES_PER_SECOND, Recorder
+from .storage import upload_recording
 from .transcribe import transcribe
 
 
@@ -64,11 +66,22 @@ class Server:
         self._listening_event.clear()
 
         wav_bytes = _pcm_to_wav(pcm_bytes)
-        final_text = transcribe(wav_bytes)
+        transcribed_text = transcribe(wav_bytes)
+
+        final_text = fix_punctuation(transcribed_text)
+
         self._type_text(final_text)
         self.last_transcription = final_text
 
-        transcription_id = save_recording(wav_bytes, final_text)
+        duration_ms = int(
+            (len(pcm_bytes) / BYTES_PER_FRAME / FRAMES_PER_SECOND) * 1000
+        )
+        transcription = Transcription(
+            transcribed_text=transcribed_text, text=final_text, duration_ms=duration_ms
+        ).save()
+        transcription_id = str(transcription.id)
+        
+        upload_recording(transcription_id, wav_bytes)
 
         span = trace.get_current_span()
         span.set_attribute("transcription.id", transcription_id)
@@ -105,9 +118,9 @@ class Server:
         elif key == keyboard.Key.esc and self._listening_event.is_set():
             self._cancel_recording()
         elif (
-            key == keyboard.KeyCode.from_char("v")
-            and keyboard.Key.ctrl_l in self._pressed_keys
-            and keyboard.Key.cmd in self._pressed_keys
+                key == keyboard.KeyCode.from_char("v")
+                and keyboard.Key.ctrl_l in self._pressed_keys
+                and keyboard.Key.cmd in self._pressed_keys
         ):
             self._type_text(self.last_transcription)
 
