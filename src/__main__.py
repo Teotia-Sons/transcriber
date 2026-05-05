@@ -8,7 +8,8 @@ from .tracing import setup_tracing
 
 def main():
     setup_tracing()
-    connect(host=Config.MONGO_URI)
+    # Close idle connections to handle system sleep/wake cycles
+    connect(host=Config.MONGO_URI, maxIdleTimeMS=180000)
     server = Server()
     server.run()
 
