@@ -10,7 +10,7 @@ def transcribe(wav_bytes: bytes) -> str:
         files={"file": ("audio.wav", wav_bytes, "audio/wav")},
         data={"model": "whisper-large-v3-turbo", "response_format": "json"},
     )
-    
+
     response.raise_for_status()
     result = response.json()
 
