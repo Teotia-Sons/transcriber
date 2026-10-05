@@ -3,6 +3,7 @@ import threading
 import time
 import wave
 
+from loguru import logger
 from opentelemetry import context, trace
 from pynput import keyboard
 from pynput.keyboard import Controller
@@ -67,8 +68,10 @@ class Server:
 
         wav_bytes = _pcm_to_wav(pcm_bytes)
         transcribed_text = transcribe(wav_bytes)
+        logger.debug(f"Transcribed: {transcribed_text}")
 
         final_text = fix_punctuation(transcribed_text)
+        logger.debug(f"Punctuated: {final_text}")
 
         self._type_text(final_text)
         self.last_transcription = final_text

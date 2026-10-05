@@ -19,7 +19,10 @@ class Recorder:
     def start(self):
         assert not self._listening_event.is_set()
 
-        self._stream = PyAudio().open(
+        audio = PyAudio()
+        logger.debug(f"Input source: {audio.get_default_input_device_info()['name']}")
+
+        self._stream = audio.open(
             format=AUDIO_FORMAT,
             channels=1,
             rate=FRAMES_PER_SECOND,
